@@ -268,7 +268,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     static Map<String, Object> versionModuleAligns
 
     static def versionGroupAligns
-    static Project project
+    Project project
     static def copiedModules
 
     // If true we need to do a static version apply from project.ext
@@ -281,7 +281,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
     static Map<WarningType, Boolean> shownWarnings
 
-    static Object getExtOverride(String prop) {
+    Object getExtOverride(String prop) {
         if (!gradleV2PostAGPApplyFallback)
             return null
         project.ext.has(prop) ? project.ext.get(prop) : null
@@ -314,14 +314,14 @@ class GradleProjectPlugin implements Plugin<Project> {
 
     // At fundamental level this OneSignal plugin and the gms version checks are solving the same problem
     // Disabling the version check part of the gms plugin with their flag
-    static void disableGMSVersionChecks() {
+    void disableGMSVersionChecks() {
         project.plugins.withType(Plugin) {
             project.extensions.findByName('googleServices')?.disableVersionCheck = true
         }
     }
 
     // Get the AGP plugin instance if it has been applied already
-    static Plugin appliedAndroidPlugin() {
+    Plugin appliedAndroidPlugin() {
         Plugin androidPlugin = null
         project.plugins.each {
             if (it.class.name == 'com.android.build.gradle.AppPlugin' ||
@@ -333,7 +333,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         androidPlugin
     }
 
-    static void detectProjectState() {
+    void detectProjectState() {
         def plugin = appliedAndroidPlugin()
         if (plugin == null)
             return
@@ -348,8 +348,8 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static final def WARNING_MSG_COULD_NOT_GET_AGP_VERSION = 'OneSignal Warning: Could not get AGP plugin version'
-    static boolean isAGPVersionOlderThan(Plugin plugin, String version) {
+    final def WARNING_MSG_COULD_NOT_GET_AGP_VERSION = 'OneSignal Warning: Could not get AGP plugin version'
+    boolean isAGPVersionOlderThan(Plugin plugin, String version) {
         def agpVersion = getAGPVersion(plugin)
         if (!agpVersion) {
             if (project)
@@ -360,7 +360,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         compareVersions(agpVersion, version) == -1
     }
 
-    static String getAGPVersion(Plugin plugin) {
+    String getAGPVersion(Plugin plugin) {
         def pluginVersion = getAGPVersionFromAndroidClass()
         if (pluginVersion)
             return pluginVersion
@@ -376,7 +376,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         getAGPVersionByGradleVersion()
     }
 
-    static String getAGPVersionFromAndroidClass() {
+    String getAGPVersionFromAndroidClass() {
         try {
             return com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION
         } catch(NoClassDefFoundError ignore) {
@@ -388,7 +388,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Only use as a fallback, use getAGPVersionFromAndroidClass() instead if it's available
-    static String getAGPVersionFromJarManifest(Plugin plugin) {
+    String getAGPVersionFromJarManifest(Plugin plugin) {
         try {
             def classLoader = plugin.class.classLoader as URLClassLoader
             def inputStream = classLoader.findResource('META-INF/MANIFEST.MF').openStream()
@@ -408,7 +408,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Gets the AGP version when this plugin is applied from an "apply from:" file
-    static String getAGPFromResolvedConfiguration() {
+    String getAGPFromResolvedConfiguration() {
         if (!project)
             return null
         String agpVersion = null
@@ -422,7 +422,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Only use as a fallback, use getAGPVersionFromAndroidClass() instead if it's available
-    static String getAGPVersionByGradleVersion() {
+    String getAGPVersionByGradleVersion() {
         if (!project)
             return null
 
@@ -441,20 +441,20 @@ class GradleProjectPlugin implements Plugin<Project> {
         // com.android.builder.Version.getAndroidGradlePluginVersion()
     }
 
-    static boolean isValidVersionNumber(String version) {
+    boolean isValidVersionNumber(String version) {
         def versionParser = new VersionParser()
         def parsedVersion = versionParser.transform(version)
         parsedVersion.numericParts.length > 0 && parsedVersion.numericParts[0] != null
     }
 
-    static void warnOnce(WarningType type, String msg) {
+    void warnOnce(WarningType type, String msg) {
         if (shownWarnings[type])
             return
         shownWarnings[type] = true
         project.logger.warn("OneSignalPlugin: WARNING: $msg")
     }
 
-    static void resolutionHooksForAndroidPluginV3() {
+    void resolutionHooksForAndroidPluginV3() {
         // Can use this instead of 'project.afterEvaluate'
         // project.gradle.projectsEvaluated { gradle ->  // gradle.allprojects {
         // However this does not work for library projects
@@ -476,7 +476,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void resolutionHooksForAndroidPluginV2() {
+    void resolutionHooksForAndroidPluginV2() {
         project.configurations.all { configuration ->
             project.dependencies {
                 doResolutionStrategyAndroidPluginV2(configuration)
@@ -493,7 +493,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void doResolutionStrategyAndroidPluginV2(Configuration configuration) {
+    void doResolutionStrategyAndroidPluginV2(Configuration configuration) {
         // The Android 3.0.0 Gradle plugin resolves this before we can
         //   Skip it in this case to prevent a build error
         if (configuration.name.with { endsWith('WearApp') || endsWith('wearApp')} )
@@ -516,7 +516,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Calculates versions alignment and applies it to all configurations
-    static void doResolutionStrategyAndroidPluginV3(Configuration lazyConfiguration) {
+    void doResolutionStrategyAndroidPluginV3(Configuration lazyConfiguration) {
         // Step 1. Generate a versionGroupAligns Map for all configurations
         // TODO: Look into only running once instead of per variant
         project.configurations.all { configuration ->
@@ -529,7 +529,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void doResolutionStrategyAndroidPluginV3_3() {
+    void doResolutionStrategyAndroidPluginV3_3() {
         project.configurations.all { configuration ->
             // Config may start with debug or release
             if (configuration.name.with {
@@ -544,7 +544,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Get either applicationVariants or libraryVariants depending on project type
-    static DomainObjectCollection<BaseVariant> projectVariants() {
+    DomainObjectCollection<BaseVariant> projectVariants() {
         if (project.android.hasProperty('applicationVariants'))
             project.android.applicationVariants
         else
@@ -554,7 +554,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     // Each variant is created from this internal Android Gradle plugin method
     // private createTasksForFlavoredBuild(ProductFlavorData... flavorDataList) {
     // https://stackoverflow.com/questions/31461267/using-a-different-manifestplaceholder-for-each-build-variant
-    static int getCurrentTargetSdkVersion() {
+    int getCurrentTargetSdkVersion() {
         def targetSdkVersion = 0
         projectVariants().all { variant ->
             def mergedFlavor = variant.mergedFlavor
@@ -571,7 +571,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     }
 
     // Based on android.targetSdkVersion, upgrade any groups to meet compatibility
-    static void doTargetSdkVersionAlign() {
+    void doTargetSdkVersionAlign() {
         def curSdkVersion = getCurrentTargetSdkVersion()
         if (curSdkVersion == 0)
             return
@@ -628,7 +628,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         versionOverride['version'] = newMaxVersion
     }
 
-    static int getCompileSdkVersion() {
+    int getCompileSdkVersion() {
         (project.android.compileSdkVersion as String).split('-')[1].toInteger()
     }
 
@@ -714,7 +714,7 @@ class GradleProjectPlugin implements Plugin<Project> {
             details.because('OneSignal override')
     }
 
-    static void logModuleOverride(DependencyResolveDetails details, String resolvedVersion) {
+    void logModuleOverride(DependencyResolveDetails details, String resolvedVersion) {
         def modName = "${details.target.group}:${details.target.name}"
         def versionsMsg = "'${details.target.version}' to '${resolvedVersion}'"
         def msg = "${modName} overridden from ${versionsMsg}"
@@ -757,7 +757,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         versionComparator.asVersionComparator().compare(inComingVersion, existingVersion)
     }
 
-    static Map<String, Object> finalAlignmentRules() {
+    Map<String, Object> finalAlignmentRules() {
         project.logger.info("OneSignalProjectPlugin: FINAL ALIGN PART 1: Groups : ${versionGroupAligns}")
         project.logger.info("OneSignalProjectPlugin: FINAL ALIGN PART 1: Modules: ${versionModuleAligns}")
 
@@ -804,7 +804,7 @@ class GradleProjectPlugin implements Plugin<Project> {
 
     // project.android.@plugin - This looks to be on the AppExtension class however this didn't work
     // Found 'enforceUniquePackageName' by comparing project.android.properties between versions
-    static boolean isAndroidPluginV3() {
+    boolean isAndroidPluginV3() {
         !project.android.hasProperty('enforceUniquePackageName')
     }
 
@@ -814,7 +814,7 @@ class GradleProjectPlugin implements Plugin<Project> {
             configuration.canBeResolved = true
     }
 
-    static void generateHighestVersionsForGroups(Configuration configuration) {
+    void generateHighestVersionsForGroups(Configuration configuration) {
         // Skipping configurations to fix the following error
         // > Cannot create variant 'android-manifest-metadata' after configuration ':debugApiElements' has been resolved
         if (configuration.name.with {
@@ -863,7 +863,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void updateVersionGroupAligns(String group, String version) {
+    void updateVersionGroupAligns(String group, String version) {
         if (group == GROUP_ONESIGNAL)
             project.logger.info("OneSignal: Setting version in versionGroupAligns to: ${version}")
         updateParentOnDependencyUpgrade(group, version)
