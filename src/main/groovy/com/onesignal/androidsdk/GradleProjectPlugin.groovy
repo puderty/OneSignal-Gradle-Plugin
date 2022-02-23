@@ -593,15 +593,18 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void doGroupAlignStrategyOnDetail(DependencyResolveDetails details) {
+    void doGroupAlignStrategyOnDetail(DependencyResolveDetails details) {
         if (!inGroupAlignList(details))
             return
-
+        if (details == null || details.target == null || details.target.group == null) {
+            project.logger.warn("Donald OneSignalPlugin: WARNING: " + details)
+            return;
+        }
         String toVersion = finalAlignmentRules()[details.target.group]['version']
         overrideVersion(details, toVersion)
     }
 
-    static void compileSdkVersionDependencyLimits(versionOverride) {
+    void compileSdkVersionDependencyLimits(versionOverride) {
         def maxSupportVersionObj = versionOverride['compileSdkVersionMax'] as Map<Integer, String>
         if (!maxSupportVersionObj)
             return
@@ -632,7 +635,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         (project.android.compileSdkVersion as String).split('-')[1].toInteger()
     }
 
-    static String maxAndroidSupportVersion(Map<Integer, String> maxSupportVersionObj) {
+    String maxAndroidSupportVersion(Map<Integer, String> maxSupportVersionObj) {
         def compileSdkVersion = getCompileSdkVersion()
         if (compileSdkVersion <= LAST_MAJOR_ANDROID_SUPPORT_VERSION) {
             String maxSupportVersion = maxSupportVersionObj[compileSdkVersion]
@@ -645,7 +648,7 @@ class GradleProjectPlugin implements Plugin<Project> {
             LAST_MAJOR_ANDROID_SUPPORT_VERSION + ".+"
     }
 
-    static void overrideVersion(DependencyResolveDetails details, String groupVersionOverride) {
+    void overrideVersion(DependencyResolveDetails details, String groupVersionOverride) {
         def group = details.target.group
         def name = details.target.name
         def version = details.target.version
@@ -775,7 +778,7 @@ class GradleProjectPlugin implements Plugin<Project> {
 
     // Normally not used, reads static fallbacks if project has AGP v2 and this plugin was applied last
     // Reads ext.androidSupportLibVersion and ext.androidSupportLibVersion to apply this logic
-    static void applyExtFallbackOverrides(finalVersionGroupAligns) {
+    void applyExtFallbackOverrides(finalVersionGroupAligns) {
         if (!gradleV2PostAGPApplyFallback)
             return
 
@@ -792,7 +795,7 @@ class GradleProjectPlugin implements Plugin<Project> {
 
     // Parts of Firebase depend parts of GMS that must align to the same version
     // This only applies to versions less than 15.0.0
-    static void alignAcrossGroups(versionGroupAligns) {
+    void alignAcrossGroups(versionGroupAligns) {
         def highestVersion = acceptedOrIntersectVersion(
             versionGroupAligns[GROUP_GMS]['version'] as String,
             versionGroupAligns[GROUP_FIREBASE]['version'] as String
@@ -808,7 +811,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         !project.android.hasProperty('enforceUniquePackageName')
     }
 
-    static void forceCanBeResolved(Configuration configuration) {
+    void forceCanBeResolved(Configuration configuration) {
         // canBeResolved not available on Gradle 2.14.1 and older
         if (configuration.hasProperty('canBeResolved'))
             configuration.canBeResolved = true
@@ -871,7 +874,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         versionGroupAligns[group]['version'] = version
     }
 
-    static void triggerResolutionStrategy(Configuration configuration) {
+    void triggerResolutionStrategy(Configuration configuration) {
         try {
            processIncomingResolutionResults(configuration)
         } catch (ignored) {
@@ -881,7 +884,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void processIncomingResolutionResults(Configuration configuration) {
+    void processIncomingResolutionResults(Configuration configuration) {
         configuration.incoming.resolutionResult.allDependencies.each { DependencyResult dependencyResult ->
             def requestedArtifactParts = dependencyResult.requested.displayName.split(':')
 
@@ -928,7 +931,7 @@ class GradleProjectPlugin implements Plugin<Project> {
      * @param module - String - Gradle module such as "OneSignal"
      * @param version - String - Exact version or a valid Gradle version range such as "[1.0.0, 2.0.0)"
      */
-    static void updateVersionModuleAligns(String group, String module, String version) {
+    void updateVersionModuleAligns(String group, String module, String version) {
         def inputModule = "$group:$module"
 
         // When we get a dependent version value parent's to a min version if needed
@@ -960,7 +963,7 @@ class GradleProjectPlugin implements Plugin<Project> {
             hasFullPlayServices = true
     }
 
-    static void updateVersionModuleAlignsForCompileSdkVersion(String module) {
+    void updateVersionModuleAlignsForCompileSdkVersion(String module) {
         def compileVersion = getCompileSdkVersion()
         MODULE_DEPENDENCY_MAX_ANDROID_COMPILE_SDK[module].each {maxSdkVersion , versionMax ->
             if (compileVersion <= maxSdkVersion) {
@@ -969,7 +972,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         }
     }
 
-    static void updateVersionModuleAlignsKey(String groupAndModule, String version) {
+    void updateVersionModuleAlignsKey(String groupAndModule, String version) {
         versionModuleAligns[groupAndModule] = [version: version]
 
         // Recursive call to check the parent of this parent rule we just added
@@ -984,7 +987,7 @@ class GradleProjectPlugin implements Plugin<Project> {
         SKIP_CALC_WHEN_PARENT.contains(group)
     }
 
-    static void updateParentOnDependencyUpgrade(String dependencyGroup, String dependencyVersion) {
+    void updateParentOnDependencyUpgrade(String dependencyGroup, String dependencyVersion) {
         UPDATE_PARENT_ON_DEPENDENCY_UPGRADE[dependencyGroup].each { key, value ->
             def exactVersion = new ExactVersionSelector(key)
             if (isVersionBelow(dependencyVersion, exactVersion))
@@ -1062,7 +1065,7 @@ class GradleProjectPlugin implements Plugin<Project> {
     //              If we do this then the following much change;
     //                1. Use lowerBound of inclusive range. (Easy)
     //                2. If exclusive, use the next lowest version candidate. (Hard)
-    static String acceptedOrIntersectVersion(String inComingStr, String existingStr) {
+    String acceptedOrIntersectVersion(String inComingStr, String existingStr) {
         def inComing = parseSelector(inComingStr)
         def existing = parseSelector(existingStr)
 
